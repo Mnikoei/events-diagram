@@ -1,0 +1,23 @@
+{
+    "name": "mnikoei/events-diagram",
+    "description": "This package helps you visualize your application events and their listeners",
+    "authors": [
+        {
+            "name": "mnikoei",
+            "email": "mohsen.nikoei@gmail.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Mnikoei\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Mnikoei\\EventsDiagramServiceProvider"
+            ]
+        }
+    }
+}
