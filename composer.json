@@ -10,13 +10,13 @@
     "require": {},
     "autoload": {
         "psr-4": {
-            "Mnikoei\\": "src/"
+            "Mnikoei\\EventsDiagram\\": "src/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Mnikoei\\EventsDiagramServiceProvider"
+                "Mnikoei\\EventsDiagram\\EventsDiagramServiceProvider"
             ]
         }
     }
