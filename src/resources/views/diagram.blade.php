@@ -18,7 +18,8 @@
     <Diagram
         :width="2000"
         :height="1000"
-        scale="1"
+        scale=".7"
+        :fluid="true"
         background="#fafafa"
         :nodes="nodes"
         :links="links"
@@ -40,7 +41,9 @@
 
 </body>
 <script>
-    var data = {!! stripcslashes(json_encode($diagramData)) !!};
+
+    // console.log(shit);
+    var data = {!! str_replace('\\', '/', stripcslashes(json_encode($diagramData))) !!};
     console.log(data)
     // var data = {
     //     "width": 800,
