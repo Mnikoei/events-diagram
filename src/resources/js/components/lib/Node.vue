@@ -1,60 +1,5 @@
 <template>
   <g>
-    <g v-if="editable">
-      <text
-        v-if="selected"
-        :x="x + 5"
-        :y="y + node.height + 22"
-        class="button"
-        fill="#00b894"
-        @click="editCandidate"
-      >
-        {{ labels.edit || "Edit" }}
-      </text>
-      <text
-        v-if="selected"
-        :x="x + 5"
-        :y="y - 10"
-        class="button"
-        fill="#00b894"
-        stroke="none"
-        @click="toggleSelect"
-      >
-        {{
-          !createLinkMode ? labels.link || "Link" : labels.cancel || "Cancel"
-        }}
-      </text>
-      <text
-        v-if="selected"
-        :x="x + 100"
-        :y="y - 10"
-        class="button"
-        fill="orange"
-        @click="copy"
-      >
-        {{ labels.copy || "Copy" }}
-      </text>
-      <text
-        v-if="selected"
-        :x="x + 65"
-        :y="y + node.height + 22"
-        class="button"
-        fill="#ff7675"
-        @click="remove"
-      >
-        {{ labels.remove || "Remove" }}
-      </text>
-      <text
-        v-if="createLinkMode && !selected"
-        :x="x + 5"
-        :y="y - 10"
-        class="button"
-        fill="#ff7675"
-        @click="commitDest"
-      >
-        {{ labels.select || "Select" }}
-      </text>
-    </g>
     <ellipse
       v-if="node.shape === 'ellipse'"
       class="grab"
@@ -67,12 +12,6 @@
       :fill="content.color || '#ecf0f1'"
       :stroke-width="node.strokeWeight"
       :stroke="node.stroke"
-      @touchstart="mousedown"
-      @mousedown="mousedown"
-      @mousemove="mousemove"
-      @touchmove="mousemove"
-      @mouseup="mouseup"
-      @touchend="mouseup"
     />
     <rect
       v-else
@@ -86,12 +25,6 @@
       :fill="content.color || '#ecf0f1'"
       :stroke-width="node.strokeWeight"
       :stroke="node.stroke"
-      @touchstart="mousedown"
-      @mousedown="mousedown"
-      @mousemove="mousemove"
-      @touchmove="mousemove"
-      @mouseup="mouseup"
-      @touchend="mouseup"
     />
     <a target="_blank" :href="content.url">
       <text
@@ -108,9 +41,8 @@
   </g>
 </template>
 <script>
-import mouseLocation from "../mouseLocation";
+
 export default {
-  mixins: [mouseLocation],
   props: {
     node: {
       width: Number,
@@ -134,14 +66,7 @@ export default {
       },
       stroke: String,
       strokeWeight: Number
-    },
-    editable: Boolean,
-    createLinkMode: Boolean,
-    selected: Boolean,
-    labels: Object,
-    scale: String,
-    rWidth: Number,
-    rHeight: Number
+    }
   },
   watch: {
     node() {
@@ -161,65 +86,6 @@ export default {
       y: this.node.point.y,
       content: this.node.content
     };
-  },
-  methods: {
-    toggleSelect() {
-      this.$emit("toggleSelect");
-    },
-    commitDest() {
-      this.$emit("commitDest", this.id);
-    },
-    remove() {
-      this.$emit("remove", this.id);
-    },
-    copy() {
-      this.$emit("copy", this.node);
-    },
-    mousedown(e) {
-      if (!this.editable) return;
-      this.$emit("select", this.id);
-      const [x, y] = this.getLocation(e);
-      this.cursorOffset.x = x;
-      this.cursorOffset.y = y;
-      this.startPosition = { x: this.x, y: this.y };
-
-      document.addEventListener("mousemove", this.mousemove);
-      document.addEventListener("mouseup", this.mouseup);
-    },
-    mousemove(e) {
-      if (this.startPosition) {
-        e.preventDefault();
-        const [x, y] = this.getLocation(e);
-        this.x =
-          this.startPosition.x +
-          (x - this.cursorOffset.x) / this.rWidth / parseFloat(this.scale);
-        this.y =
-          this.startPosition.y +
-          (y - this.cursorOffset.y) / this.rHeight / parseFloat(this.scale);
-        this.$emit("updateLocation", {
-          id: this.id,
-          x: this.x,
-          y: this.y
-        });
-      }
-    },
-    mouseup() {
-      this.startPosition = null;
-
-      document.removeEventListener("mousemove", this.mousemove);
-      document.removeEventListener("mouseup", this.mouseup);
-    },
-    editCandidate() {
-      this.$emit("editNode", {
-        id: this.id,
-        shape: this.node.shape,
-        width: this.node.width,
-        height: this.node.height,
-        content: this.content,
-        stroke: this.node.stroke,
-        strokeWeight: this.node.strokeWeight
-      });
-    }
   }
 };
 </script>
