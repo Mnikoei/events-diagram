@@ -4,6 +4,7 @@
 namespace Mnikoei\EventsDiagram\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 class EventsDiagramController extends Controller
@@ -27,40 +28,46 @@ class EventsDiagramController extends Controller
                 $flatten[$event][] = (new \ReflectionFunction($listener))->getStaticVariables()['listener'];
             }
             $cnt++;
-            if ($cnt>30){
-//                break;
+            if ($cnt>10){
+                break;
             }
         }
 
         $diagramData = $this->createDiagramData($flatten);
-
         return view('EventsDiagram::diagram', compact('diagramData'));
     }
 
     public function createDiagramData($events)
     {
-        $diagramData = [
-            'width' => 800,
-            'height' => 600,
-            'background' => "#eee",
-            'nodes' => [],
-            'links' => []
-        ];
-
+        $nets = [];
         foreach ($events as $event => $listeners){
-            $eventNode =  $this->createEventNode($event);
-            $diagramData['nodes'][] = $eventNode;
+            $shit = [];
+
+            $nodes = [
+                ['name' => $event]
+            ];
 
             foreach ($listeners as $listener){
-                $listenerNode = $this->createListenerNode($listener);
-                $diagramData['nodes'][] = $listenerNode;
-
-                $link = $this->createLinkNode($listenerNode, $eventNode);
-                $diagramData['links'][] = $link;
+                $nodes[] = ['name' => $listener];
             }
+            $shit['nodes'] = $nodes;
+
+            array_pop($nodes);
+            $links = [];
+            foreach ($nodes as $index => $node){
+                $links[] = ['source' => $index + 1, 'target' => 0];
+            }
+            $shit['links'] = $links;
+
+            $nets[] = $shit;
         }
-        return $diagramData;
+
+        return $nets;
     }
+
+
+
+
 
     public function createEventNode($event)
     {
