@@ -37,23 +37,41 @@
     var mouseX;
     var mouseY;
 
-    var nets = {!! str_replace('\\', '/', stripcslashes(json_encode($diagramData))) !!}
+    var data = {!! str_replace('\\', '/', stripcslashes(json_encode($diagramData))) !!}
 
-    nets.forEach(function(net){
-        create(net.nodes, mapNodes(net.nodes, net.links));
-    });
 
-    function mapNodes(nodes, links){
+    const nets = [];
+    Object.entries(data).forEach(entry => {
+        const [event, listeners] = entry;
+        const nodes = [];
 
-        var mapedLinks = [];
+        nodes.push({
+            name : event
+        });
 
-        links.forEach(function(link){
-            mapedLinks.push({
-                source: nodes[link.source], target: nodes[link.target]
+        listeners.forEach(listener => {
+            nodes.push({
+                name : listener
             });
         });
 
-        return mapedLinks;
+        nets.push(nodes);
+    });
+
+    nets.forEach(function(nodes){
+        create(nodes, createLinks(nodes));
+    });
+
+    // The first node is target node and the rest are source node
+    function createLinks(nodes){
+        const links = [];
+        const targetNode = nodes[0];
+
+        nodes.forEach(node => {
+            links.push({ source : node, target : targetNode});
+        });
+
+        return links;
     }
 
 
@@ -100,6 +118,7 @@
             .charge(-1000)
             .size([w, h]);
 
+        console.log(force);
         var link = vis.selectAll(".link")
             .data(links)
             .enter().append("line")
@@ -114,7 +133,7 @@
 
             //MOUSEOVER
             .on("mouseover", function(d,i) {
-                if (i>0) {
+                if (i > 0) {
                     //CIRCLE
                     d3.select(this).selectAll("circle")
                         .transition()
@@ -135,7 +154,7 @@
                 } else {
                     //CIRCLE
                     d3.select(this).selectAll("circle")
-                        .style("cursor", "none")
+                        .style("cursor", "none");
 
                     //TEXT
                     d3.select(this).select("text")
@@ -145,7 +164,7 @@
 
             //MOUSEOUT
             .on("mouseout", function(d,i) {
-                if (i>0) {
+                if (i > 0) {
                     //CIRCLE
                     d3.select(this).selectAll("circle")
                         .transition()
@@ -185,7 +204,6 @@
         //TEXT
         node.append("text")
             .text(function(node, i) {
-                /** Get last part of namespace which is class name */
                 return node.name.split('/').slice(-1).pop();
             })
             .attr("x",            function(d, i) { if (i>0) { return circleWidth + 5; }   else { return -10 } })

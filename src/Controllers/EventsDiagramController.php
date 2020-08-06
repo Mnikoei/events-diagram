@@ -9,7 +9,6 @@ use Illuminate\Support\Str;
 
 class EventsDiagramController extends Controller
 {
-    protected $events;
 
     public function show()
     {
@@ -18,113 +17,39 @@ class EventsDiagramController extends Controller
         $reflectionProperty->setAccessible(true);
         $events = $reflectionProperty->getValue(app('events'));
 
-        $this->events = $events;
-        $this->listenersCount();
-        $flatten = [];
-        $cnt= 1;
-        foreach ($events as $event => $listeners){
-            $arr[$event] = [];
-            foreach ($listeners as $listener){
-                $flatten[$event][] = (new \ReflectionFunction($listener))->getStaticVariables()['listener'];
-            }
-            $cnt++;
-            if ($cnt>10){
-                break;
-            }
-        }
+        $diagramData = $this->createDiagramData($events);
 
-        $diagramData = $this->createDiagramData($flatten);
         return view('EventsDiagram::diagram', compact('diagramData'));
     }
 
     public function createDiagramData($events)
     {
-        $nets = [];
-        foreach ($events as $event => $listeners){
-            $shit = [];
+        return array_map(function ($listeners){
 
-            $nodes = [
-                ['name' => $event]
-            ];
+            return array_map(function ($listenerObject){
 
-            foreach ($listeners as $listener){
-                $nodes[] = ['name' => $listener];
-            }
-            $shit['nodes'] = $nodes;
+                // Get listener name from it's closure
+                return $this->getListenerName($listenerObject);
 
-            array_pop($nodes);
-            $links = [];
-            foreach ($nodes as $index => $node){
-                $links[] = ['source' => $index + 1, 'target' => 0];
-            }
-            $shit['links'] = $links;
+            }, $listeners);
 
-            $nets[] = $shit;
+        }, $events);
+    }
+
+    public function getListenerName($listener)
+    {
+        $name = (new \ReflectionFunction($listener))->getStaticVariables()['listener'];
+
+        if (is_object($name)){
+            $listenerClosure = (new \ReflectionFunction($name));
+
+            $filename = $listenerClosure->getFileName();
+            $startLine = $listenerClosure->getStartLine();
+            $endLine = $listenerClosure->getEndLine();
+
+            $name = "$filename line $startLine to $endLine <closure>";
         }
 
-        return $nets;
-    }
-
-
-
-
-
-    public function createEventNode($event)
-    {
-        $shit = $this->listenersCount() * 80;
-        $gap = $shit / count($this->events);
-
-        static $y = 0 ;
-        return [
-            'id' => Str::random(),
-            'content' => [
-                'text' => $event,
-                'color' => '#fab1a0'
-            ],
-            'width' => strlen($event) * 12,
-            'height' => 45,
-            'point' => ['x' => 50, 'y' => $y += $gap],
-            'shape' => 'rectangle',
-            'stroke' => 'transparent',
-            'strokeWeight' => 2
-        ];
-    }
-
-    public function createListenerNode($listener)
-    {
-        static $y = 0;
-        return [
-            'id' => Str::random(),
-            'content' => [
-                'text' => is_object($listener) ? 'shit' : $listener,
-                'color' => '#00AFF0'
-            ],
-            'width' => is_object($listener) ? 20 : strlen($listener) * 12,
-            'height' => 45,
-            'point' => ['x' => 1200, 'y' => $y += 80],
-            'shape' => 'rectangle',
-            'stroke' => 'transparent',
-            'strokeWeight' => 2
-        ];
-    }
-
-    public function createLinkNode($sourceNode, $destinationNode)
-    {
-        return [
-            'id' => Str::random(),
-            'source' => $sourceNode['id'],
-            'destination' => $destinationNode['id'],
-            'color' => '#74b9ff',
-            'pattern' => 'solid',
-            'arrow' => 'dest'
-        ];
-    }
-
-    public function listenersCount()
-    {
-        $listeners = array_values($this->events);
-        return array_reduce($listeners, function ($sum, $items){
-            return $sum + count($items);
-        }, 0);
+        return $name;
     }
 }
