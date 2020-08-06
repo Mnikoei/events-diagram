@@ -7,232 +7,254 @@
 
 
     <style>
-        body, .stage {
-            background: #042029;
+        .node {
+            cursor: pointer;
         }
-        .popup {
-            background: white;
-            position: absolute;
-            padding: 1rem;
-            border-radius: .5rem;
-            opacity: 0;
-            transition: opacity .7s;
+        .node circle {
+            fill: #fff;
+            stroke: steelblue;
+            stroke-width: 1.5px;
+        }
+        .node text {
+            font: 10px sans-serif;
+        }
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 1.5px;
+        }
+
+        body {
+            overflow: hidden;
         }
     </style>
 
     <script src="https://d3js.org/d3.v3.min.js"></script>
 
 </head>
-<body onmousemove="updatePointerPosition(event)">
+<body>
 
-    <div id="popup" class="popup">
-        hello
+    <div id="body">
+
     </div>
 
 </body>
 <script>
 
-    var popup = document.getElementById('popup');
+    var margin = {
+            top: 20,
+            right: 120,
+            bottom: 20,
+            left: 120
+        },
+        width = 960 - margin.right - margin.left,
+        height = 800 - margin.top - margin.bottom;
 
-    var mouseX;
-    var mouseY;
+    var root = {
+        "name": "flare",
+        "children": [{
+            "name": "analytics"
+        }, {
+            "name": "animate"
+        }, {
+            "name": "data"
+        }, {
+            "name": "display"
+        }, {
+            "name": "flex"
+        }, {
+            "name": "physics"
+        }, {
+            "name": "query"
+        }, {
+            "name": "scale"
+        }, {
+            "name": "util"
+        }, {
+            "name": "vis",
+            "size": 1302
+        }]
+    };
 
-    var data = {!! str_replace('\\', '/', stripcslashes(json_encode($diagramData))) !!}
+    var i = 0,
+        duration = 750,
+        rectW = 60,
+        rectH = 30;
 
-
-    const nets = [];
-    Object.entries(data).forEach(entry => {
-        const [event, listeners] = entry;
-        const nodes = [];
-
-        nodes.push({
-            name : event
+    var tree = d3.layout.tree().nodeSize([70, 40]);
+    var diagonal = d3.svg.diagonal()
+        .projection(function (d) {
+            return [d.x + rectW / 2, d.y + rectH / 2];
         });
 
-        listeners.forEach(listener => {
-            nodes.push({
-                name : listener
-            });
-        });
+    root.x0 = 0;
+    root.y0 = height / 2;
 
-        nets.push(nodes);
-    });
-
-    nets.forEach(function(nodes){
-        create(nodes, createLinks(nodes));
-    });
-
-    // The first node is target node and the rest are source node
-    function createLinks(nodes){
-        const links = [];
-        const targetNode = nodes[0];
-
-        nodes.forEach(node => {
-            links.push({ source : node, target : targetNode});
-        });
-
-        return links;
+    function collapse(d) {
+        if (d.children) {
+            d._children = d.children;
+            d._children.forEach(collapse);
+            d.children = null;
+        }
     }
 
+    function update(source, svg) {
 
-    function create(nodes, links){
+        // Compute the new tree layout.
+        var nodes = tree.nodes(root).reverse(),
+            links = tree.links(nodes);
 
-        var w = 600;
-        var h = 400;
+        // Normalize for fixed-depth.
+        nodes.forEach(function (d) {
+            d.y = d.depth * 180;
+        });
 
-        var circleWidth = 7;
-
-        var palette = {
-            "lightgray": "#819090",
-            "gray": "#708284",
-            "mediumgray": "#536870",
-            "darkgray": "#475B62",
-
-            "darkblue": "#0A2933",
-            "darkerblue": "#042029",
-
-            "paleryellow": "#FCF4DC",
-            "paleyellow": "#EAE3CB",
-            "yellow": "#A57706",
-            "orange": "#BD3613",
-            "red": "#D11C24",
-            "pink": "#C61C6F",
-            "purple": "#595AB7",
-            "blue": "#2176C7",
-            "green": "#259286",
-            "yellowgreen": "#738A05"
-        };
-
-
-
-        var vis = d3.select("body")
-            .append("svg:svg")
-            .attr("class", "stage")
-            .attr("width", w)
-            .attr("height", h);
-
-        var force = d3.layout.force()
-            .nodes(nodes)
-            .links([])
-            .gravity(0.1)
-            .charge(-1000)
-            .size([w, h]);
-
-        console.log(force);
-        var link = vis.selectAll(".link")
-            .data(links)
-            .enter().append("line")
-            .attr("class", "link")
-            .attr("stroke", "#CCC")
-            .attr("fill", "none");
-
-        var node = vis.selectAll("circle.node")
-            .data(nodes)
-            .enter().append("g")
-            .attr("class", "node")
-
-            //MOUSEOVER
-            .on("mouseover", function(d,i) {
-                if (i > 0) {
-                    //CIRCLE
-                    d3.select(this).selectAll("circle")
-                        .transition()
-                        .duration(250)
-                        .style("cursor", "none")
-                        .attr("r", circleWidth+3)
-                        .attr("fill",palette.orange);
-
-                    //TEXT
-                    d3.select(this).select("text")
-                        .transition()
-                        .style("cursor", "none")
-                        .duration(250)
-                        .style("cursor", "none")
-                        .attr("font-size","1.5em")
-                        .attr("x", 15 )
-                        .attr("y", 5 )
-                } else {
-                    //CIRCLE
-                    d3.select(this).selectAll("circle")
-                        .style("cursor", "none");
-
-                    //TEXT
-                    d3.select(this).select("text")
-                        .style("cursor", "none")
-                }
-            })
-
-            //MOUSEOUT
-            .on("mouseout", function(d,i) {
-                if (i > 0) {
-                    //CIRCLE
-                    d3.select(this).selectAll("circle")
-                        .transition()
-                        .duration(250)
-                        .attr("r", circleWidth)
-                        .attr("fill",palette.pink);
-
-                    //TEXT
-                    d3.select(this).select("text")
-                        .transition()
-                        .duration(250)
-                        .attr("font-size","1em")
-                        .attr("x", 8 )
-                        .attr("y", 4 )
-                }
-            })
-
-            .call(force.drag);
-
-
-        //CIRCLE
-        node.append("svg:circle")
-            .attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; })
-            .attr("r", circleWidth)
-            .attr("fill", function(d, i) { if (i>0) { return  palette.pink; } else { return palette.paleryellow } })
-            .on('mouseover', function (node) {
-                popup.innerText = node.name;
-                popup.style.left = mouseX + "px";
-                popup.style.top = mouseY + "px";
-                popup.style.opacity = "1";
-            }).on('mouseout', function () {
-                setTimeout(() => { popup.style.opacity = "0" }, 700)
+        // Update the nodes…
+        var node = svg.selectAll("g.node")
+            .data(nodes, function (d) {
+                return d.id || (d.id = ++i);
             });
 
-
-        //TEXT
-        node.append("text")
-            .text(function(node, i) {
-                return node.name.split('/').slice(-1).pop();
+        // Enter any new nodes at the parent's previous position.
+        var nodeEnter = node.enter().append("g")
+            .attr("class", "node")
+            .attr("transform", function (d) {
+                return "translate(" + source.x0 + "," + source.y0 + ")";
             })
-            .attr("x",            function(d, i) { if (i>0) { return circleWidth + 5; }   else { return -10 } })
-            .attr("y",            function(d, i) { if (i>0) { return circleWidth + 0 }    else { return 8 } })
-            .attr("font-family",  "Bree Serif")
-            .attr("fill",         function(d, i) { if (i>0) { return  palette.paleryellow; }        else { return palette.yellowgreen } })
-            .attr("font-size",    function(d, i) { if (i>0) { return  "1em"; }            else { return "1.8em" } })
-            .attr("text-anchor",  function(d, i) { if (i>0) { return  "beginning"; }      else { return "end" } })
+            .on("click", click);
 
+        nodeEnter.append("rect")
+            .attr("width", rectW)
+            .attr("height", rectH)
+            .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .style("fill", function (d) {
+                return d._children ? "lightsteelblue" : "#fff";
+            });
 
+        nodeEnter.append("text")
+            .attr("x", rectW / 2)
+            .attr("y", rectH / 2)
+            .attr("dy", ".35em")
+            .attr("text-anchor", "middle")
+            .text(function (d) {
+                return d.name;
+            });
 
-        force.on("tick", function(e) {
-            node.attr("transform", function(d, i) {
+        // Transition nodes to their new position.
+        var nodeUpdate = node.transition()
+            .duration(duration)
+            .attr("transform", function (d) {
                 return "translate(" + d.x + "," + d.y + ")";
             });
 
-            link.attr("x1", function(d)   { return d.source.x; })
-                .attr("y1", function(d)   { return d.source.y; })
-                .attr("x2", function(d)   { return d.target.x; })
-                .attr("y2", function(d)   { return d.target.y; })
+        nodeUpdate.select("rect")
+            .attr("width", rectW)
+            .attr("height", rectH)
+            .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .style("fill", function (d) {
+                return d._children ? "lightsteelblue" : "#fff";
+            });
+
+        nodeUpdate.select("text")
+            .style("fill-opacity", 1);
+
+        // Transition exiting nodes to the parent's new position.
+        var nodeExit = node.exit().transition()
+            .duration(duration)
+            .attr("transform", function (d) {
+                return "translate(" + source.x + "," + source.y + ")";
+            })
+            .remove();
+
+        nodeExit.select("rect")
+            .attr("width", rectW)
+            .attr("height", rectH)
+            //.attr("width", bbox.getBBox().width)""
+            //.attr("height", bbox.getBBox().height)
+            .attr("stroke", "black")
+            .attr("stroke-width", 1);
+
+        nodeExit.select("text");
+
+        // Update the links…
+        var link = svg.selectAll("path.link")
+            .data(links, function (d) {
+                return d.target.id;
+            });
+
+        // Enter any new links at the parent's previous position.
+        link.enter().insert("path", "g")
+            .attr("class", "link")
+            .attr("x", rectW / 2)
+            .attr("y", rectH / 2)
+            .attr("d", function (d) {
+                var o = {
+                    x: source.x0,
+                    y: source.y0
+                };
+                return diagonal({
+                    source: o,
+                    target: o
+                });
+            });
+
+        // Transition links to their new position.
+        link.transition()
+            .duration(duration)
+            .attr("d", diagonal);
+
+        // Transition exiting nodes to the parent's new position.
+        link.exit().transition()
+            .duration(duration)
+            .attr("d", function (d) {
+                var o = {
+                    x: source.x,
+                    y: source.y
+                };
+                return diagonal({
+                    source: o,
+                    target: o
+                });
+            })
+            .remove();
+
+        // Stash the old positions for transition.
+        nodes.forEach(function (d) {
+            d.x0 = d.x;
+            d.y0 = d.y;
         });
-
-        force.start();
     }
 
-    function updatePointerPosition(event) {
-        mouseX = event.layerX;
-        mouseY = event.layerY;
+    // Toggle children on click.
+    function click(d) {
+        if (d.children) {
+            d._children = d.children;
+            d.children = null;
+        } else {
+            d.children = d._children;
+            d._children = null;
+        }
+        update(d);
     }
+
+    function create(root){
+
+        var svg = d3.select("body")
+            .append("svg:svg")
+            .attr("width", 1000)
+            .attr("height", 400)
+            .append("g")
+            .attr("transform", "translate(" + 350 + "," + 20 + ")");
+
+        root.children.forEach(collapse);
+        update(root, svg);
+
+        d3.select("body").style("height", "800px");
+    }
+    create(root);
+    create(root);
 </script>
 
 </html>
